@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>CSV資料載入地圖</title>
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
+
+  <style>
+    #map {
+      height: 100vh;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<!-- Marker Cluster JS -->
+<script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+<!-- PapaParse JS -->
+<script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
+
+<script>
+// 初始化地圖
+var map = L.map('map').setView([23.5, 121], 8); // 台灣中心座標
+
+// 底圖（快速）
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; OpenStreetMap contributors'
+}).addTo(map);
+
+// Cluster群組
+var markers = L.markerClusterGroup();
+
+// 載入 CSV（路徑要改成你的！）
+Papa.parse("雲林縣A1A2cvs.csv", {
+  download: true,
+  header: true,
+  complete: function(results) {
+    results.data.forEach(function(d) {
+      // 假設你的 CSV 有 '緯度' 和 '經度' 欄位
+      var lat = parseFloat(d["緯度"]);
+      var lng = parseFloat(d["經度"]);
+      
+      // 確保有值再畫
+      if (!isNaN(lat) && !isNaN(lng)) {
+        var marker = L.marker([lat, lng])
+          .bindPopup("事故時間：" + d["時間"] + "<br>事故類別：" + d["類型"]);
+        markers.addLayer(marker);
+      }
+    });
+
+    map.addLayer(markers);
+  }
+});
+</script>
+
+</body>
+</html>
