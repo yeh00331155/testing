@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"/>
+
   <style>
     #map {
       height: 100vh;
@@ -73,6 +74,26 @@
       cursor: pointer;
       box-shadow: 0px 0px 6px rgba(0,0,0,0.3);
     }
+    #legend {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  background: white;
+  padding: 10px 14px;
+  border-radius: 8px;
+  box-shadow: 0px 0px 8px rgba(0,0,0,0.3);
+  font-size: 16px;
+  z-index: 1000;
+  line-height: 1.6;
+}
+  #legend h4 {
+  margin: 0 0 6px 0; /* 上右下左，設定上方0、下方6px */
+  font-size: 18px;
+}
+#legend img {
+  vertical-align: middle;
+  margin-right: 0px;
+}
   </style>
 </head>
 <body>
@@ -118,7 +139,21 @@
 </div>
 
 <div id="map"></div>
+<div id="legend">
+  <h4>圖例</h4>
+  <div><img src="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png" width="20"> A1 (紅色)</div>
+  <div><img src="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-orange.png" width="20"> A2 (橘色)</div>
+</div>
+
+<div id="legend">
+  <h4>圖例</h4>
+  <div><img src="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png" width="20"> A1 (紅色)</div>
+  <div><img src="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-orange.png" width="20"> A2 (橘色)</div>
+</div>
+
+
 <div id="selectionInfo">未選取範圍</div>
+
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
