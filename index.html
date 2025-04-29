@@ -7,93 +7,17 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"/>
-
   <style>
-    #map {
-      height: 100vh;
-      width: 100%;
-    }
-    #filterContainer {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      z-index: 1000;
-    }
-    #filterPanel {
-      background: #dbe9f4;
-      padding: 10px;
-      border-radius: 8px;
-      box-shadow: 0px 0px 8px rgba(0,0,0,0.3);
-      font-size: 18px;
-      position: relative;
-      min-width: 220px;
-    }
-    #filterPanel select {
-      margin: 4px 0;
-      font-size: 18px;
-      padding: 4px 12px;
-      border-radius: 5px;
-    }
-    #selectionInfo {
-      position: absolute;
-      bottom: 20px;
-      left: 20px;
-      background: white;
-      padding: 8px 12px;
-      border-radius: 8px;
-      box-shadow: 0px 0px 8px rgba(0,0,0,0.3);
-      font-size: 16px;
-      z-index: 1000;
-    }
-    #minimizeButton {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      background-color: #f1f1f1;
-      border: 1px solid #ccc;
-      border-radius: 50%;
-      width: 30px;
-      height: 30px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      box-shadow: 0px 0px 4px rgba(0,0,0,0.3);
-	}
-
-    #restoreButton {
-      display: none;
-      background-color: white;
-      border: 1px solid #ccc;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      font-size: 24px;
-      text-align: center;
-      line-height: 36px;
-      cursor: pointer;
-      box-shadow: 0px 0px 6px rgba(0,0,0,0.3);
-    }
-    #legend {
-  position: absolute;
-  bottom: 20px;
-  right: 20px;
-  background: white;
-  padding: 10px 14px;
-  border-radius: 8px;
-  box-shadow: 0px 0px 8px rgba(0,0,0,0.3);
-  font-size: 16px;
-  z-index: 1000;
-  line-height: 1.6;
-}
-  #legend h4 {
-  margin: 0 0 6px 0; /* 上右下左，設定上方0、下方6px */
-  font-size: 18px;
-}
-#legend img {
-  vertical-align: middle;
-  margin-right: 0px;
-}
+    #map { height: 100vh; width: 100%; }
+    #filterContainer { position: absolute; top: 20px; right: 20px; z-index: 1000; }
+    #filterPanel { background: #dbe9f4; padding: 10px; border-radius: 8px; box-shadow: 0px 0px 8px rgba(0,0,0,0.3); font-size: 18px; position: relative; min-width: 220px; }
+    #filterPanel select { margin: 4px 0; font-size: 18px; padding: 4px 12px; border-radius: 5px; }
+    #selectionInfo { position: absolute; bottom: 20px; left: 20px; background: white; padding: 8px 12px; border-radius: 8px; box-shadow: 0px 0px 8px rgba(0,0,0,0.3); font-size: 16px; z-index: 1000; }
+    #minimizeButton { position: absolute; top: 8px; right: 8px; background-color: #f1f1f1; border: 1px solid #ccc; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0px 0px 4px rgba(0,0,0,0.3); }
+    #restoreButton { display: none; background-color: white; border: 1px solid #ccc; border-radius: 50%; width: 40px; height: 40px; font-size: 24px; text-align: center; line-height: 36px; cursor: pointer; box-shadow: 0px 0px 6px rgba(0,0,0,0.3); }
+    #legend { position: absolute; bottom: 20px; right: 20px; background: white; padding: 10px 14px; border-radius: 8px; box-shadow: 0px 0px 8px rgba(0,0,0,0.3); font-size: 16px; z-index: 1000; line-height: 1.6; }
+    #legend h4 { margin: 0 0 6px 0; font-size: 18px; }
+    #legend img { vertical-align: middle; margin-right: 0px; }
   </style>
 </head>
 <body>
@@ -101,35 +25,40 @@
 <div id="filterContainer">
   <div id="filterPanel">
     <div id="minimizeButton">
-	<svg width="16" height="16" viewBox="0 0 24 24">
-    	<rect x="5" y="11" width="14" height="2" fill="#333"/>
-  	</svg>
+      <svg width="16" height="16" viewBox="0 0 24 24">
+        <rect x="5" y="11" width="14" height="2" fill="#333"/>
+      </svg>
     </div>
-    <label>
-      事故類別：
+    <label>事故類別：
       <select id="typeFilter">
         <option value="全部">全部</option>
         <option value="A1">A1</option>
         <option value="A2">A2</option>
       </select>
-    </label>
-    <br>
-    <label>
-      時段：
+    </label><br>
+    <label>時間：
       <select id="timeFilter">
-        <option value="全部">全部時段</option>
-        <option value="00:00-06:00">00:00 - 06:00</option>
-        <option value="06:00-12:00">06:00 - 12:00</option>
-        <option value="12:00-13:00">12:00 - 13:00</option>
-        <option value="13:00-14:00">13:00 - 14:00</option>
-        <option value="14:00-15:00">14:00 - 15:00</option>
-        <option value="15:00-18:00">15:00 - 18:00</option>
-        <option value="18:00-24:00">18:00 - 24:00</option>
+        <option value="全部">全部時間</option>
+        <option value="00:00-02:00">00:00-02:00</option>
+        <option value="02:00-04:00">02:00-04:00</option>
+        <option value="04:00-06:00">04:00-06:00</option>
+        <option value="06:00-08:00">06:00-08:00</option>
+        <option value="08:00-10:00">08:00-10:00</option>
+        <option value="10:00-12:00">10:00-12:00</option>
+        <option value="12:00-14:00">12:00-14:00</option>
+        <option value="14:00-16:00">14:00-16:00</option>
+        <option value="16:00-18:00">16:00-18:00</option>
+        <option value="18:00-20:00">18:00-20:00</option>
+        <option value="20:00-22:00">20:00-22:00</option>
+        <option value="22:00-24:00">22:00-24:00</option>
       </select>
-    </label>
-    <br>
-    <label>
-      年分：
+    </label><br>
+    <label>時段：
+      <select id="periodFilter">
+        <option value="全部">全部時段</option>
+      </select>
+    </label><br>
+    <label>年分：
       <select id="yearFilter">
         <option value="全部">全部年份</option>
       </select>
@@ -144,30 +73,15 @@
   <div><img src="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png" width="20"> A1 (紅色)</div>
   <div><img src="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-orange.png" width="20"> A2 (橘色)</div>
 </div>
-
-<div id="legend">
-  <h4>圖例</h4>
-  <div><img src="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png" width="20"> A1 (紅色)</div>
-  <div><img src="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-orange.png" width="20"> A2 (橘色)</div>
-</div>
-
-
 <div id="selectionInfo">未選取範圍</div>
-
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
 <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
-
 <script>
-// ========== 你的原本地圖 + 資料讀取 + 畫範圍的完整程式碼 ==========
-// （這邊我直接插入，不改壞）
-
 var map = L.map('map').setView([23.5, 121], 8);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '&copy; OpenStreetMap contributors'
-}).addTo(map);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
 
 var markers = L.markerClusterGroup();
 var data = [];
@@ -175,70 +89,43 @@ var drawnItems = new L.FeatureGroup();
 map.addLayer(drawnItems);
 
 var drawControl = new L.Control.Draw({
-  draw: {
-    rectangle: true,
-    circle: true,
-    polygon: true,
-    polyline: false,
-    marker: false,
-    circlemarker: false
-  },
-  edit: {
-    featureGroup: drawnItems,
-    edit: false,
-    remove: true
-  }
+  draw: { rectangle: true, circle: true, polygon: true, polyline: false, marker: false, circlemarker: false },
+  edit: { featureGroup: drawnItems, edit: false, remove: true }
 });
 map.addControl(drawControl);
 
 function convertTo24Hour(str) {
   if (!str) return "";
   str = str.trim();
-  var parts = str.match(/^(\d{1,2}):(\d{2})\s?(AM|PM)$/i);
-  if (!parts) return "";
+  var parts = str.match(/^(\d{1,2}):(\d{2})\s?(AM|PM)?$/i);
+  if (!parts) return str;
   var hour = parseInt(parts[1], 10);
   var minute = parseInt(parts[2], 10);
-  var ampm = parts[3].toUpperCase();
+  var ampm = parts[3] ? parts[3].toUpperCase() : null;
   if (ampm === "PM" && hour !== 12) hour += 12;
   if (ampm === "AM" && hour === 12) hour = 0;
   return (hour < 10 ? "0" : "") + hour + ":" + (minute < 10 ? "0" : "") + minute;
 }
 
-function timeInRange(accidentTime, rangeStr) {
-  if (rangeStr === "全部") return true;
+function timeInRange(accidentTime, range) {
+  if (range === "全部") return true;
   var accident24 = convertTo24Hour(accidentTime);
-  if (!accident24) return false;
-  var [start, end] = rangeStr.split('-');
+  var [start, end] = range.split('-');
   start = start.trim();
   end = end.trim();
-  if (end < start) {
-    return (accident24 >= start || accident24 < end);
-  }
-  return (accident24 >= start && accident24 < end);
+  if (end < start) return accident24 >= start || accident24 < end;
+  return accident24 >= start && accident24 < end;
 }
 
 function updateMarkers() {
-  var redIcon = new L.Icon({
-    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
-    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41]
-  });
-  var orangeIcon = new L.Icon({
-    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-orange.png',
-    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41]
-  });
+  var redIcon = new L.Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png', shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] });
+  var orangeIcon = new L.Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-orange.png', shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] });
 
   markers.clearLayers();
 
   var selectedType = document.getElementById('typeFilter').value;
   var selectedTime = document.getElementById('timeFilter').value;
+  var selectedPeriod = document.getElementById('periodFilter').value;
   var selectedYear = document.getElementById('yearFilter').value;
 
   data.forEach(function(d) {
@@ -246,30 +133,21 @@ function updateMarkers() {
     var lng = parseFloat(d["經度"]);
     var type = d["事故類別"];
     var time = d["時間"];
+    var period = d["時段"];
     var year = d["年"];
 
     var typeMatch = (selectedType === "全部" || type === selectedType);
-    var timeMatch = timeInRange(time, selectedTime);
+    var timeMatch = (selectedTime === "全部" || timeInRange(time, selectedTime));
+    var periodMatch = (selectedPeriod === "全部" || period === selectedPeriod);
     var yearMatch = (selectedYear === "全部" || year === selectedYear);
 
-    if (!isNaN(lat) && !isNaN(lng) && typeMatch && timeMatch && yearMatch) {
-      var markerIcon = (type === "A1") ? redIcon : (type === "A2") ? orangeIcon : L.icon({
-        iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-        iconSize: [25, 41],
-        iconAnchor: [12, 41],
-        popupAnchor: [1, -34],
-        shadowSize: [41, 41]
-      });
-
+    if (!isNaN(lat) && !isNaN(lng) && typeMatch && timeMatch && periodMatch && yearMatch) {
+      var markerIcon = (type === "A1") ? redIcon : (type === "A2") ? orangeIcon : L.icon({ iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png', shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] });
       var popupContent = "";
-for (var key in d) {
-  if (d[key]) {
-    popupContent += key + "：" + d[key] + "<br>";
-  }
-}
-var marker = L.marker([lat, lng], {icon: markerIcon})
-  .bindPopup(popupContent);
+      for (var key in d) {
+        if (d[key]) popupContent += key + "：" + d[key] + "<br>";
+      }
+      var marker = L.marker([lat, lng], {icon: markerIcon}).bindPopup(popupContent);
       markers.addLayer(marker);
     }
   });
@@ -279,6 +157,7 @@ var marker = L.marker([lat, lng], {icon: markerIcon})
 
 document.getElementById('typeFilter').addEventListener('change', updateMarkers);
 document.getElementById('timeFilter').addEventListener('change', updateMarkers);
+document.getElementById('periodFilter').addEventListener('change', updateMarkers);
 document.getElementById('yearFilter').addEventListener('change', updateMarkers);
 
 Papa.parse("雲林縣A1A2cvs.csv", {
@@ -287,74 +166,46 @@ Papa.parse("雲林縣A1A2cvs.csv", {
   complete: function(results) {
     data = results.data;
     var years = {};
-    data.forEach(function(d){
-      var year = d["年"];
-      if(year) years[year] = true;
+    var periods = {};
+    data.forEach(function(d) {
+      if (d["年"]) years[d["年"]] = true;
+      if (d["時段"]) periods[d["時段"]] = true;
     });
     var yearFilter = document.getElementById('yearFilter');
     yearFilter.innerHTML = '<option value="全部">全部年份</option>';
-    Object.keys(years).sort().forEach(function(year){
+    Object.keys(years).sort().forEach(function(year) {
       var option = document.createElement('option');
       option.value = year;
       option.text = year;
       yearFilter.appendChild(option);
     });
-
+    var periodFilter = document.getElementById('periodFilter');
+    periodFilter.innerHTML = '<option value="全部">全部時段</option>';
+    Object.keys(periods).forEach(function(period) {
+      var option = document.createElement('option');
+      option.value = period;
+      option.text = period;
+      periodFilter.appendChild(option);
+    });
     updateMarkers();
   }
 });
 
-function calculateDistance(latlngs) {
-  if (latlngs.length < 2) return 0;
-  var maxDist = 0;
-  for (var i = 0; i  < latlngs.length; i++) {
-    for (var j = i+1; j < latlngs.length; j++) {
-      var dist = map.distance(latlngs[i], latlngs[j]);
-      if (dist > maxDist) maxDist = dist;
-    }
-  }
-  return maxDist / 1000;
-}
-
-map.on(L.Draw.Event.CREATED, function (event) {
-    var layer = event.layer;
-    drawnItems.clearLayers();
-    drawnItems.addLayer(layer);
-
-    var bounds = layer.getBounds ? layer.getBounds() : layer.getLatLngBounds();
-    var selectedMarkers = [];
-
-    markers.eachLayer(function(marker) {
-      if (layer instanceof L.Circle) {
-        if (layer.getLatLng().distanceTo(marker.getLatLng()) <= layer.getRadius()) {
-          selectedMarkers.push(marker);
-        }
-      } else {
-        if (bounds.contains(marker.getLatLng())) {
-          selectedMarkers.push(marker);
-        }
-      }
-    });
-
-    var km = 0;
-    if (layer instanceof L.Circle) {
-      km = layer.getRadius() / 1000;
-    } else {
-      km = calculateDistance(layer.getLatLngs()[0] || []);
-    }
-
-    document.getElementById('selectionInfo').innerText = "已選取事故：" + selectedMarkers.length + "筆｜範圍：約" + km.toFixed(2) + "公里";
+map.on('draw:created', function (event) {
+  var layer = event.layer;
+  drawnItems.clearLayers();
+  drawnItems.addLayer(layer);
 });
 
 map.on('draw:deleted', function() {
-    document.getElementById('selectionInfo').innerText = "未選取範圍";
+  document.getElementById('selectionInfo').innerText = "未選取範圍";
 });
 
-// ========== 加上最小化、恢復功能 ==========
 document.getElementById('minimizeButton').addEventListener('click', function() {
   document.getElementById('filterPanel').style.display = 'none';
   document.getElementById('restoreButton').style.display = 'inline-block';
 });
+
 document.getElementById('restoreButton').addEventListener('click', function() {
   document.getElementById('filterPanel').style.display = 'block';
   document.getElementById('restoreButton').style.display = 'none';
