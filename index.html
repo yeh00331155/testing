@@ -171,6 +171,8 @@ Papa.parse("雲林縣A1A2cvs.csv", {
       if (d["年"]) years[d["年"]] = true;
       if (d["時段"]) periods[d["時段"]] = true;
     });
+
+    // 填入年份
     var yearFilter = document.getElementById('yearFilter');
     yearFilter.innerHTML = '<option value="全部">全部年份</option>';
     Object.keys(years).sort().forEach(function(year) {
@@ -179,18 +181,28 @@ Papa.parse("雲林縣A1A2cvs.csv", {
       option.text = year;
       yearFilter.appendChild(option);
     });
+
+    // 填入時段 (並將上午和下午對調)
     var periodFilter = document.getElementById('periodFilter');
     periodFilter.innerHTML = '<option value="全部">全部時段</option>';
-    Object.keys(periods).forEach(function(period) {
+    var sortedPeriods = Object.keys(periods);
+
+    if (sortedPeriods.includes("下午") && sortedPeriods.includes("上午")) {
+      sortedPeriods = sortedPeriods.filter(p => p !== "上午" && p !== "下午");
+      sortedPeriods.unshift("下午");
+      sortedPeriods.unshift("上午");
+    }
+
+    sortedPeriods.forEach(function(period) {
       var option = document.createElement('option');
       option.value = period;
       option.text = period;
       periodFilter.appendChild(option);
     });
+
     updateMarkers();
   }
 });
-
 map.on('draw:created', function (event) {
   var layer = event.layer;
   drawnItems.clearLayers();
