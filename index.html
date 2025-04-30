@@ -181,15 +181,7 @@ Papa.parse("雲林縣A1A2cvs.csv", {
     });
     var periodFilter = document.getElementById('periodFilter');
     periodFilter.innerHTML = '<option value="全部">全部時段</option>';
-    var sortedPeriods = Object.keys(periods);
-
-    if (sortedPeriods.includes("下午") && sortedPeriods.includes("上午")) {
-      sortedPeriods = sortedPeriods.filter(p => p !== "上午" && p !== "下午");
-      sortedPeriods.unshift("下午");
-      sortedPeriods.unshift("上午");
-    }
-
-    sortedPeriods.forEach(function(period) {
+    Object.keys(periods).forEach(function(period) {
       var option = document.createElement('option');
       option.value = period;
       option.text = period;
@@ -203,11 +195,70 @@ map.on('draw:created', function (event) {
   var layer = event.layer;
   drawnItems.clearLayers();
   drawnItems.addLayer(layer);
+
+  var selectedMarkers = [];
+
+  // 放射狀選取 (Circle)
+  if (layer instanceof L.Circle) {
+    var center = layer.getLatLng();
+    var radius = layer.getRadius(); // 公尺
+    markers.eachLayer(function(marker) {
+      if (center.distanceTo(marker.getLatLng()) <= radius) {
+        selectedMarkers.push(marker);
+      }
+    });
+    var km = radius / 1000;
+
+  // 矩形選取 (Rectangle)
+  } else if (layer instanceof L.Rectangle) {
+    var bounds = layer.getBounds();
+    markers.eachLayer(function(marker) {
+      if (bounds.contains(marker.getLatLng())) {
+        selectedMarkers.push(marker);
+      }
+    });
+    var km = calculateDistance([
+      bounds.getNorthWest(),
+      bounds.getNorthEast(),
+      bounds.getSouthEast(),
+      bounds.getSouthWest()
+    ]);
+
+  // 套索選取 (Polygon)
+  } else if (layer instanceof L.Polygon) {
+    var latlngs = layer.getLatLngs()[0];
+    var polygon = L.polygon(latlngs);
+    markers.eachLayer(function(marker) {
+      if (polygon.getBounds().contains(marker.getLatLng())) {
+        selectedMarkers.push(marker);
+      }
+    });
+    var km = calculateDistance(latlngs);
+  }
+
+  // 顯示結果
+  if (selectedMarkers.length === 0) {
+    document.getElementById('selectionInfo').innerText = "範圍內沒有事故點！";
+  } else {
+    document.getElementById('selectionInfo').innerText =
+      "已選取事故：" + selectedMarkers.length + "筆｜範圍：約" + km.toFixed(2) + "公里";
+  }
+
+  function calculateDistance(latlngs) {
+  if (!latlngs || latlngs.length < 2) return 0;
+  let maxDist = 0;
+  for (let i = 0; i < latlngs.length; i++) {
+    for (let j = i + 1; j < latlngs.length; j++) {
+      let dist = map.distance(latlngs[i], latlngs[j]); // 單位是公尺
+      if (dist > maxDist) maxDist = dist;
+    }
+  }
+  return maxDist / 1000; // 公尺轉公里
+}
+
 });
 
-map.on('draw:deleted', function() {
-  document.getElementById('selectionInfo').innerText = "未選取範圍";
-});
+//篩選器放大縮小
 
 document.getElementById('minimizeButton').addEventListener('click', function() {
   document.getElementById('filterPanel').style.display = 'none';
@@ -218,6 +269,7 @@ document.getElementById('restoreButton').addEventListener('click', function() {
   document.getElementById('filterPanel').style.display = 'block';
   document.getElementById('restoreButton').style.display = 'none';
 });
+
 </script>
 
 </body>
