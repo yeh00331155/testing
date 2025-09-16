@@ -1,77 +1,86 @@
-
-import os
-import json
-import requests
+import pickle
 import pandas as pd
 import streamlit as st
-from datetime import date, time
+from datetime import date, time, datetime
 
-st.set_page_config(page_title="事故預測（MVP）", page_icon="🚦", layout="wide")
+# ========= 載入 pipeline.pkl =========
+@st.cache_resource
+def load_pipeline():
+    with open("pipeline.pkl", "rb") as f:
+        pipe = pickle.load(f)
+    return pipe
 
-st.sidebar.header("參數（最小版）")
-loc = st.sidebar.text_input("地點（Location Name）", "")
-d = st.sidebar.date_input("日期（Date）", value=date.today(), format="YYYY-MM-DD")
-t = st.sidebar.time_input("時間（Time）", value=time(8,30,0), step=60)
+PIPELINE = load_pipeline()
 
-api_base = "http://localhost:8000"
+tfv = PIPELINE["tfv"]
+model = PIPELINE["model"]
+scaler = PIPELINE.get("scaler", None)
+num_feats = PIPELINE["num_feats"]
+tfidf_cols = PIPELINE["tfidf_cols"]
+cat_feats = PIPELINE["cat_feats"]
+defaults = PIPELINE.get("defaults", {})
+
+# ========= 自動特徵工程 =========
+def build_features(date_str, time_str, location):
+    # 轉日期時間
+    yyyy, mm, dd = int(date_str[:4]), int(date_str[4:6]), int(date_str[6:8])
+    HH, MM, SS = int(time_str[:2]), int(time_str[2:4]), int(time_str[4:6])
+    dt = datetime(yyyy, mm, dd, HH, MM, SS)
+
+    feat = {
+        "Hour": HH,
+        "Month": mm,
+        "Weekday": dt.weekday(),
+        "is_weekend": 1 if dt.weekday() >= 5 else 0,
+        "is_peak": 1 if (7 <= HH <= 9) or (17 <= HH <= 19) else 0,
+        "loc_acc_count": 0,  # 沒有 loc_acc_count.csv 時，預設 0
+    }
+
+    # 其他分類特徵 → 用 defaults 填入
+    for c in cat_feats:
+        if c in ["Road Condition", "Road_Condition"]:
+            feat["RoadCond_Ord"] = defaults.get("RoadCond_Ord", 0)
+        else:
+            feat[c] = defaults.get(c, "NA")
+
+    # Cause Analysis → 這裡先當空字串
+    cause_text = ""
+
+    # TF-IDF
+    tf_mat = tfv.transform([cause_text])
+    tf_df = pd.DataFrame(tf_mat.toarray(), columns=tfidf_cols)
+
+    # 數值欄位
+    X_num = pd.DataFrame([feat], columns=num_feats)
+    if scaler is not None:
+        X_num = pd.DataFrame(scaler.transform(X_num), columns=num_feats)
+
+    X = pd.concat([X_num.reset_index(drop=True), tf_df.reset_index(drop=True)], axis=1)
+    return X
+
+# ========= Streamlit UI =========
+st.set_page_config(page_title="交通事故預測", page_icon="🚦", layout="wide")
+
+st.sidebar.header("輸入參數（簡化版）")
+loc = st.sidebar.text_input("地點 (Location Name)", "斗六市-鎮南路/民生路")
+d = st.sidebar.date_input("日期 (Date)", value=date.today())
+t = st.sidebar.time_input("時間 (Time)", value=time(8, 30))
 
 st.title("🚦 交通事故預測（MVP）")
-st.caption("後端自動計算週末/尖峰/歷史密度與 TF‑IDF，並用 pipeline.pkl 預測。只需地點、日期、時間。")
+st.caption("只需地點 / 日期 / 時間，其餘特徵由 pipeline.pkl 的 defaults 自動補齊。")
 
-with st.expander("查看後端 /schema（可用類別與預設）"):
-    try:
-        sch = requests.get(f"{api_base}/schema", timeout=5).json()
-        st.json(sch, expanded=False)
-    except Exception as e:
-        st.warning(f"無法連線到 API /schema：{e}")
+if st.button("送出預測", type="primary"):
+    ds = d.strftime("%Y%m%d")
+    ts = t.strftime("%H%M%S")
+    X = build_features(ds, ts, loc)
 
-col1, col2 = st.columns([1,1])
-
-with col1:
-    st.subheader("單筆預測")
-    if st.button("送出預測", type="primary"):
-        if not loc:
-            st.error("請輸入地點（Location Name）。")
-        else:
-            ds = d.strftime("%Y%m%d")
-            ts = t.strftime("%H%M%S")
-            payload = {
-                "data": {
-                    "Date": ds,
-                    "Time": ts,
-                    "Cause Analysis": "",
-                    "Road Condition": None,
-                    "Location Name": loc
-                }
-            }
-            try:
-                r = requests.post(f"{api_base}/predict", json=payload, timeout=10)
-                if r.status_code == 200:
-                    st.success("成功！")
-                    st.json(r.json())
-                else:
-                    st.error(f"API 回應 {r.status_code}: {r.text}")
-            except Exception as e:
-                st.error(f"請求失敗：{e}")
-
-with col2:
-    st.subheader("批次上傳 Excel")
-    up = st.file_uploader("上傳 .xlsx", type=["xlsx"])
-    if up is not None and st.button("批次預測", key="batch"):
-        try:
-            files = {"file": (up.name, up.read(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")}
-            r = requests.post(f"{api_base}/batch", files=files, timeout=30)
-            if r.status_code == 200:
-                data = r.json().get("rows", [])
-                if data:
-                    df = pd.DataFrame(data)
-                    st.dataframe(df, use_container_width=True)
-                else:
-                    st.info("沒有資料列。")
-            else:
-                st.error(f"API 回應 {r.status_code}: {r.text}")
-        except Exception as e:
-            st.error(f"請求失敗：{e}")
-
-st.divider()
-st.caption(f"API_BASE = {api_base}（可用 Streamlit secrets 或環境變數覆寫）")
+    if hasattr(model, "predict_proba"):
+        probs = model.predict_proba(X)
+        classes = getattr(model, "classes_", [str(i) for i in range(probs.shape[1])])
+        pred = model.predict(X)[0]
+        st.success(f"模型預測結果：{pred}")
+        st.subheader("各類別機率")
+        st.dataframe(pd.DataFrame(probs, columns=classes))
+    else:
+        pred = model.predict(X)[0]
+        st.success(f"模型預測結果：{pred}（此模型無機率輸出）")
