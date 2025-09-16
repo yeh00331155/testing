@@ -1,7 +1,6 @@
-fastapi
-uvicorn
+streamlit
 pandas
 numpy
-openpyxl
 scikit-learn
-requests
+catboost
+
