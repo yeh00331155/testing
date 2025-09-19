@@ -9,6 +9,8 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 
 <!-- ✅ 地圖與控制項樣式設定--> 
   <style>
@@ -163,7 +165,7 @@ function updateMarkers() {
       for (var key in d) {
         if (d[key]) popupContent += key + "：" + d[key] + "<br>";
       }
-      var marker = L.marker([lat, lng], {icon: markerIcon}).bindPopup(popupContent);
+      var marker = L.marker([lat, lng], {icon: markerIcon, data:d}).bindPopup(popupContent);
       markers.addLayer(marker);
     }
   });
@@ -175,6 +177,79 @@ function updateMarkers() {
 ['typeFilter', 'timeFilter', 'periodFilter', 'yearFilter'].forEach(id => {
   document.getElementById(id).addEventListener('change', updateMarkers);
 });
+
+
+let stats = { A1: {}, A2: {} };
+let chartA1, chartA2;
+
+function computeStats(selectedMarkers) {
+  stats = { A1: {}, A2: {} };
+  selectedMarkers.forEach(marker => {
+    let d = marker.options.data; // 這裡需要在 marker 綁定 data
+    let type = d["事故類別"];
+    let group = stats[type];
+    if (!group) return;
+
+    let features = ["月", "時段", "天氣", "光照條件", "道路", "限速", "道路狀況", "車輛類型"];
+    features.forEach(f => {
+      let val = d[f];
+      if (!val) return;
+      if (!group[f]) group[f] = {};
+      group[f][val] = (group[f][val] || 0) + 1;
+    });
+  });
+}
+
+function top3(obj) {
+  if (!obj) return [];
+  return Object.entries(obj).sort((a,b)=>b[1]-a[1]).slice(0,3);
+}
+
+function renderCharts(feature) {
+  let dataA1 = top3(stats.A1[feature]);
+  let dataA2 = top3(stats.A2[feature]);
+
+  let labels1 = dataA1.map(x=>x[0]);
+  let values1 = dataA1.map(x=>x[1]);
+  let labels2 = dataA2.map(x=>x[0]);
+  let values2 = dataA2.map(x=>x[1]);
+
+  if (chartA1) chartA1.destroy();
+  if (chartA2) chartA2.destroy();
+
+  chartA1 = new Chart(document.getElementById("chartA1"), {
+    type: "bar",
+  data: { labels: labels1, datasets:[{label: feature, data: values1, backgroundColor:"red"}]},
+  options:{
+    responsive:true,
+    plugins: {
+      legend: { display: false } // 🔹隱藏圖例（如果你也不需要）
+    },
+    scales: {
+      y: { display: false }      // 🔹隱藏 Y 軸
+    }
+  }
+  });
+
+  chartA2 = new Chart(document.getElementById("chartA2"), {
+    type: "bar",
+  data: { labels: labels2, datasets:[{label: feature, data: values2, backgroundColor:"orange"}]},
+  options:{
+    responsive:true,
+    plugins: {
+      legend: { display: false }
+    },
+    scales: {
+      y: { display: false }
+    }
+  }
+  });
+
+  document.getElementById("noDataMsg").style.display =
+    (!labels1.length && !labels2.length) ? "block" : "none";
+}
+
+
 
 // ✅ 載入 CSV 檔案，填入年分與時段選單，並呼叫 updateMarkers()
 Papa.parse("雲林縣A1A2cvs.csv", {
@@ -293,6 +368,10 @@ map.on('draw:created', function (event) {
   return maxDist / 1000; // 公尺轉公里
 }
 
+// 開啟統計視窗
+document.getElementById('statsModal').style.display = 'block';
+
+
 });
 
 // ✅ 最小化與還原篩選器面板的控制功能
@@ -307,7 +386,76 @@ document.getElementById('restoreButton').addEventListener('click', function() {
   document.getElementById('restoreButton').style.display = 'none';
 });
 
+document.addEventListener("DOMContentLoaded", function() {
+  document.getElementById("generateStats").addEventListener("click", function() {
+    let selectedMarkers = [];
+    drawnItems.eachLayer(layer=>{
+      markers.eachLayer(marker=>{
+        if (layer.getBounds().contains(marker.getLatLng())) {
+          selectedMarkers.push(marker);
+        }
+      });
+    });
+
+    computeStats(selectedMarkers);
+    renderCharts("時段"); 
+  });
+
+  document.querySelectorAll("#tabButtons button").forEach(btn=>{
+    btn.addEventListener("click", function(){
+      let feature = this.dataset.feature;
+      renderCharts(feature);
+    });
+  });
+
+  document.getElementById("closeModal").onclick = function(){
+    document.getElementById("statsModal").style.display = "none";
+  }
+});
+
+
+
+
 </script>
+<!-- 彈跳視窗 (統計圖表) -->
+<div id="statsModal" class="modal">
+  <div class="modal-content">
+    <span id="closeModal" class="close">&times;</span>
+    <h2>範圍內事故統計</h2>
+    <button id="generateStats">生成統計</button>
+    <div id="chartArea">
+      <div class="chart-container">
+        <h3>A1</h3>
+        <canvas id="chartA1"></canvas>
+      </div>
+      <div class="chart-container">
+        <h3>A2</h3>
+        <canvas id="chartA2"></canvas>
+      </div>
+    </div>
+    <div id="tabButtons">
+      <button data-feature="月">月</button>
+      <button data-feature="時段">時段</button>
+      <button data-feature="天氣">天氣</button>
+      <button data-feature="光照條件">光照條件</button>
+      <button data-feature="道路">道路</button>
+      <button data-feature="限速">限速</button>
+      <button data-feature="道路狀況">道路狀況</button>
+      <button data-feature="車輛類型">車輛類型</button>
+    </div>
+    <div id="noDataMsg" style="display:none;">沒有資料</div>
+  </div>
+</div>
+
+<style>
+/* Modal 基本樣式 */
+.modal { display:none; position:fixed; z-index:2000; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.4);}
+.modal-content { background:#fff; margin:5% auto; padding:20px; border-radius:8px; width:80%; max-width:1000px;}
+.close { float:right; font-size:28px; cursor:pointer;}
+.chart-container { width:45%; display:inline-block; vertical-align:top;}
+#tabButtons { margin-top:20px; text-align:center;}
+#tabButtons button { margin:5px; padding:8px 16px; }
+</style>
 
 </body>
 </html>
