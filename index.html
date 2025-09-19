@@ -370,7 +370,11 @@ map.on('draw:created', function (event) {
 
 // 開啟統計視窗
 document.getElementById('statsModal').style.display = 'block';
+map.on('draw:deleted', function() {
+  document.getElementById('selectionInfo').innerText = "未選取範圍";
+});
 
+	
 
 });
 
@@ -459,3 +463,4 @@ document.addEventListener("DOMContentLoaded", function() {
 
 </body>
 </html>
+
