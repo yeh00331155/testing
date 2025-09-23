@@ -206,6 +206,8 @@ function updateMarkers() {
   map.addLayer(markers);
 }
 
+
+
 // ✅ 篩選器事件觸發時，更新地圖標記
 ['typeFilter', 'timeFilter', 'periodFilter', 'yearFilter'].forEach(id => {
   document.getElementById(id).addEventListener('change', updateMarkers);
@@ -233,14 +235,15 @@ function computeStats(selectedMarkers) {
   });
 }
 
-function top3(obj) {
+function top5(obj) {
   if (!obj) return [];
-  return Object.entries(obj).sort((a,b)=>b[1]-a[1]).slice(0,3);
+  return Object.entries(obj).sort((a,b)=>b[1]-a[1]).slice(0,5);
 }
 
 function renderCharts(feature) {
-  let dataA1 = top3(stats.A1[feature]);
-  let dataA2 = top3(stats.A2[feature]);
+  let dataA1 = top5(stats.A1[feature]);
+  let dataA2 = top5(stats.A2[feature]);
+
 
   let labels1 = dataA1.map(x=>x[0]);
   let values1 = dataA1.map(x=>x[1]);
@@ -403,11 +406,12 @@ map.on('draw:created', function (event) {
 
 // 開啟統計視窗
 document.getElementById('statsModal').style.display = 'block';
+
 map.on('draw:deleted', function() {
   document.getElementById('selectionInfo').innerText = "未選取範圍";
 });
 
-	
+
 
 });
 
@@ -496,5 +500,3 @@ document.addEventListener("DOMContentLoaded", function() {
 
 </body>
 </html>
-
-
