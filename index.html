@@ -10,6 +10,8 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"/>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+
 
 
 <!-- ✅ 地圖與控制項樣式設定--> 
@@ -235,55 +237,173 @@ function computeStats(selectedMarkers) {
   });
 }
 
-function top5(obj) {
-  if (!obj) return [];
-  return Object.entries(obj).sort((a,b)=>b[1]-a[1]).slice(0,5);
+function topNWithPadding(obj, n=5) {
+  let arr = [];
+  if (obj) arr = Object.entries(obj).sort((a,b)=>b[1]-a[1]).slice(0,n);
+  
+  // 如果不足 n 個，就補空白
+  while (arr.length < n) {
+    arr.push(["", 0]);
+  }
+  return arr;
 }
 
+
+
 function renderCharts(feature) {
-  let dataA1 = top5(stats.A1[feature]);
-  let dataA2 = top5(stats.A2[feature]);
+  let dataA1 = topNWithPadding(stats.A1[feature], 5);
+  let dataA2 = topNWithPadding(stats.A2[feature], 5);
 
+  let labels1 = dataA1.map(x => feature === "月" && x[0] ? x[0] + "月" : x[0]);
+  let values1 = dataA1.map(x => x[1]);
+  let labels2 = dataA2.map(x => feature === "月" && x[0] ? x[0] + "月" : x[0]);
+  let values2 = dataA2.map(x => x[1]);
 
-  let labels1 = dataA1.map(x=>x[0]);
-  let values1 = dataA1.map(x=>x[1]);
-  let labels2 = dataA2.map(x=>x[0]);
-  let values2 = dataA2.map(x=>x[1]);
 
   if (chartA1) chartA1.destroy();
   if (chartA2) chartA2.destroy();
 
   chartA1 = new Chart(document.getElementById("chartA1"), {
-    type: "bar",
-  data: { labels: labels1, datasets:[{label: feature, data: values1, backgroundColor:"red"}]},
-  options:{
-    responsive:true,
-    plugins: {
-      legend: { display: false } // 🔹隱藏圖例（如果你也不需要）
-    },
-    scales: {
-      y: { display: false }      // 🔹隱藏 Y 軸
+  type: "bar",
+  data: {
+    labels: labels1,
+    datasets:[{
+      label: "",
+      data: values1,
+      backgroundColor:"red"
+    }]
+  },
+  options: {
+    responsive: true,
+layout: {
+    padding: {
+      top: 30    // 🔹 往上留 30px 空間，避免標籤被切掉
     }
-  }
-  });
+  },
+    plugins: {
+      legend: { display: false },
+      title: { display: false },
+      tooltip: {
+        callbacks: {
+          title: () => "",
+          label: function(context) {
+            let label = context.label || "";
+            let value = context.raw || 0;
+            if (!label) return "";
+            return label ? label + "：" + value + " 筆資料" : "";
+
+          }
+        }
+      },
+      datalabels: {
+         anchor: "end",       // 以柱子頂端作為錨點
+  align: "end",        // 往上對齊（柱子外）
+  offset: -3,         // ❗數值調大一點，讓文字完全浮到柱子上方
+  color: "black",
+  font: { weight: "bold", size: 14 },
+  formatter: function(value) {
+    return value > 0 ? value + " 筆資料" : "";
+        }
+      }
+    },
+    scales: { y: {
+    display: true,
+    beginAtZero: true,
+    ticks: {
+      stepSize: 1,              // 建議的刻度間距
+      callback: function(value) {
+        if (Number.isInteger(value)) {
+          return value;         // 只顯示整數
+        }
+        return null;            // 遇到小數就不顯示
+      }
+    },
+    title: {
+      display: true,
+      text: "筆數"
+    }
+  } }
+  },
+  plugins: [ChartDataLabels]
+});
+
+
 
   chartA2 = new Chart(document.getElementById("chartA2"), {
-    type: "bar",
-  data: { labels: labels2, datasets:[{label: feature, data: values2, backgroundColor:"orange"}]},
-  options:{
-    responsive:true,
+  type: "bar",
+  data: {
+    labels: labels2,
+    datasets:[{
+      label: "",   // 🔹 一樣設定空字串
+      data: values2,
+      backgroundColor:"orange"
+    }]
+  },
+  options: {
+    responsive: true,
+layout: {
+    padding: {
+      top: 30    // 🔹 往上留 30px 空間，避免標籤被切掉
+    }
+  },
     plugins: {
-      legend: { display: false }
+      legend: { display: false },
+      title: { display: false },
+      tooltip: {
+        callbacks: {
+          title: () => "",
+          label: function(context) {
+            let label = context.label || "";
+            let value = context.raw || 0;
+            if (!label) return "";
+
+            // 🔹 如果是「月」，補上「月」
+            return label ? label + "：" + value + " 筆資料" : "";
+
+          }
+        }
+      },
+      datalabels: {
+         anchor: "end",       // 以柱子頂端作為錨點
+  align: "end",        // 往上對齊（柱子外）
+  offset: -3,         // ❗數值調大一點，讓文字完全浮到柱子上方
+  color: "black",
+  font: { weight: "bold", size: 14 },
+  formatter: function(value) {
+    return value > 0 ? value + " 筆資料" : "";
+        }
+      }
     },
     scales: {
-      y: { display: false }
+      y: {
+    display: true,
+    beginAtZero: true,
+    ticks: {
+      stepSize: 1,              // 建議的刻度間距
+      callback: function(value) {
+        if (Number.isInteger(value)) {
+          return value;         // 只顯示整數
+        }
+        return null;            // 遇到小數就不顯示
+      }
+    },
+    title: {
+      display: true,
+      text: "筆數"
     }
   }
-  });
+    }
+  },
+  plugins: [ChartDataLabels]   // 🔹 啟用標籤外掛
+});
 
-  document.getElementById("noDataMsg").style.display =
-    (!labels1.length && !labels2.length) ? "block" : "none";
+
+
+  // 判斷是否完全沒有資料（前五全是空白）
+  let hasData = dataA1.some(x=>x[1]>0) || dataA2.some(x=>x[1]>0);
+  document.getElementById("noDataMsg").style.display = hasData ? "none" : "block";
 }
+
 
 
 
@@ -388,7 +508,7 @@ map.on('draw:created', function (event) {
     document.getElementById('selectionInfo').innerText = "範圍內沒有事故點！";
   } else {
     document.getElementById('selectionInfo').innerText =
-      "已選取事故：" + selectedMarkers.length + "筆｜範圍：約" + km.toFixed(2) + "公里";
+      "已選取事故：" + selectedMarkers.length + "筆｜範圍：約半徑" + km.toFixed(2) + "公里";
   }
 
   // ✅ 計算最大距離（公里）	
@@ -491,11 +611,18 @@ document.addEventListener("DOMContentLoaded", function() {
 <style>
 /* Modal 基本樣式 */
 .modal { display:none; position:fixed; z-index:2000; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.4);}
-.modal-content { background:#fff; margin:5% auto; padding:20px; border-radius:8px; width:80%; max-width:1000px;}
+.modal-content { background:#fff; margin:3% auto; padding:20px; border-radius:8px; width:85%; max-width:1400px;height:85vh;overflow-y:auto;}
 .close { float:right; font-size:28px; cursor:pointer;}
-.chart-container { width:45%; display:inline-block; vertical-align:top;}
+.chart-container { width:48%; display:inline-block; vertical-align:top;}
 #tabButtons { margin-top:20px; text-align:center;}
 #tabButtons button { margin:5px; padding:8px 16px; }
+.modal-content h2 {
+  margin-bottom: 5px;   /* 原本應該是20px左右，把它縮小 */
+}
+#generateStats {
+  margin-bottom: 10px;  /* 與圖表區的距離縮小 */
+}
+
 </style>
 
 </body>
